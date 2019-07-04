@@ -1,4 +1,7 @@
-var CHANNEL_ACCESS_TOKEN = 'Ocrm1Al9jdzAqRQ6D9oGlB2/UqxVaUKpT8iwxUVk1+BnsuH0pBVd83YKJy5+DsUtB1LgRv1qj6olhH1nxSdQEGglRvbf8p/AKi4Bqav/+fJPpumTD4kXDoqRTzIBo23Y1GYJ0ErrEI4r8ZahfrwXuQdB04t89/1O/w1cDnyilFU='
+var CHANNEL_ACCESS_TOKEN = 'Ocrm1Al9jdzAqRQ6D9oGlB2/';
+CHANNEL_ACCESS_TOKEN += 'UqxVaUKpT8iwxUVk1+BnsuH0pBVd83YKJy5+DsUtB1LgRv1qj6olhH1nxSdQEGglRvbf8p/';
+CHANNEL_ACCESS_TOKEN += 'AKi4Bqav/+fJPpumTD4kXDoqRTzIBo23Y1GYJ0ErrEI4r8ZahfrwXuQdB04t89/';
+CHANNEL_ACCESS_TOKEN += '1O/w1cDnyilFU='
 
 function doPost(e) {  
   var msg = JSON.parse(e.postData.contents);
@@ -63,6 +66,9 @@ tx (台指期部位)\n\
 vx (VIX部位)\n\
 cn (中國部位)\n\
 st (SuperTrend部位)\n\
+st (SuperTrend部位)\n\
+power (今日發電)\n\
+alarm (今日太陽能警訊)\n\
 !help (進階管理功能說明)');
 }
 
@@ -97,7 +103,7 @@ function doShowCN(replyToken) {
 }
 
 function doShowTrend(replyToken) {
-  nameList = ['MHI', 'MCH', 'CN', 'FGBL', 'FGBM', 'FGBS', 'TXF', 'NQ', 'ES', 'YM', 'GC', 'TU', 'FV', 'TY', 'NK', 'CL']
+  nameList = ['MHI', 'MCH', 'CN', 'FGBL', 'FGBM', 'FGBS', 'TXF', 'NQ', 'ES', 'YM', 'GC', 'TU', 'FV', 'TY', 'NK', 'CL', 'rJ', 'rJM', 'rRB', 'rI']
   replyText(replyToken, getPosition(nameList));
 }
 
