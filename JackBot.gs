@@ -46,7 +46,10 @@ function doPost(e) {
       if (cmds[1] == 'all') doClear(replyToken)
       break
     case '!set':
-      doSet(replyToken, cmds[1], cmds[2])
+      doSet(replyToken, cmds[1], cmds[2], true)
+      break
+    case '!!set':
+      doSet(replyToken, cmds[1], cmds[2], false)
       break
     case '!remove':
       doRemove(replyToken, cmds[1])
@@ -56,6 +59,29 @@ function doPost(e) {
       break
     case '!sticker':
       broadcastSticker(cmds[1])
+      break
+      
+    // gold
+    case 'gold':
+      doShowGold(replyToken);
+      break;
+      
+    case '!gold':
+      doSetGold(replyToken, userMessage.substr(6));
+      break;
+      
+    // power
+    case 'power':
+      doShowPower(replyToken);
+      break;
+    case 'alarm':
+      doShowAlarm(replyToken);
+      break;
+    case '!power':
+      doSetPower(replyToken, userMessage.substr(7))
+      break
+    case '!alarm':
+      doSetAlarm(replyToken, userMessage.substr(7))
       break
   }
 }
@@ -67,6 +93,7 @@ vx (VIX部位)\n\
 cn (中國部位)\n\
 st (SuperTrend部位)\n\
 st (SuperTrend部位)\n\
+gold (黃金價格)\n\
 power (今日發電)\n\
 alarm (今日太陽能警訊)\n\
 !help (進階管理功能說明)');
@@ -106,6 +133,137 @@ function doShowTrend(replyToken) {
   nameList = ['MHI', 'MCH', 'CN', 'FGBL', 'FGBM', 'FGBS', 'TXF', 'NQ', 'ES', 'YM', 'GC', 'TU', 'FV', 'TY', 'NK', 'CL', 'rJ', 'rJM', 'rRB', 'rI']
   replyText(replyToken, getPosition(nameList));
 }
+
+// Gold Session
+function doShowGold(replyToken) {
+  var prop = PropertiesService.getUserProperties();
+  var goldStr = prop.getProperty('gold');
+  console.log('gold ' + goldStr);
+  if (goldStr) {
+    replyText(replyToken, goldStr);
+  }
+}
+
+function doSetGold(replyToken, goldStr) {
+  console.log('!gold ' + goldStr);
+  
+  var prop = PropertiesService.getUserProperties();
+  prop.setProperty('gold', goldStr);
+  
+  if (needGoldSummerized()) {
+    console.log('BROADCAST: ' + goldStr)
+    broadcastText(goldStr)
+    // replyText(replyToken, powerStr)
+  }
+}
+
+function needGoldSummerized() {
+  // 若是當天第一次 hour 為 10 時，傳回 true，否則就是 false
+  var prop = PropertiesService.getUserProperties();
+
+  var checkHour = 10
+  var d = new Date();
+  var hour = d.getHours();
+  
+  key = 'gold_summarized';
+  summarized = prop.getProperty(key)
+  console.log('gold_summarized: ' + summarized);
+  
+  if (hour==checkHour) {
+    if (!summarized) {
+      prop.setProperty(key, 1);
+      return true;
+    }
+  }
+  else {
+    if (summarized) {
+      prop.deleteProperty(key);
+    }
+  }
+  
+  return false;
+}
+// End Gold Session
+
+
+// Sun Power Session
+function doShowPower(replyToken) {
+  var prop = PropertiesService.getUserProperties();
+  var powerStr = prop.getProperty('power');
+  console.log('power ' + powerStr);
+  if (powerStr) {
+    replyText(replyToken, powerStr);
+  }
+}
+
+function doShowAlarm(replyToken) {
+  var prop = PropertiesService.getUserProperties();
+  var alarmStr = prop.getProperty('alarm');
+  console.log('alarm ' + alarmStr);
+  if (alarmStr) {
+    replyText(replyToken, alarmStr);
+  }
+  else {
+    replyText(replyToken, 'no alarm.');
+  }
+}
+
+function needPowerSummerized() {
+  // 若是當天第一次 hour 為 19 時，傳回 true，否則就是 false
+  var prop = PropertiesService.getUserProperties();
+
+  var checkHour = 19
+  var d = new Date();
+  var hour = d.getHours();
+  
+  key = 'power_summarized';
+  summarized = prop.getProperty(key)
+  console.log('power_summarized: ' + summarized);
+  
+  if (hour==checkHour) {
+    if (!summarized) {
+      prop.setProperty(key, 1);
+      return true;
+    }
+  }
+  else {
+    if (summarized) {
+      prop.deleteProperty(key);
+    }
+  }
+  
+  return false;
+}
+
+function doSetPower(replyToken, powerStr) {
+  console.log('!power ' + powerStr);
+  
+  var prop = PropertiesService.getUserProperties();
+  prop.setProperty('power', powerStr);
+  
+  if (needPowerSummerized()) {
+    console.log('BROADCAST: ' + powerStr)
+    broadcastText(powerStr)
+    // replyText(replyToken, powerStr)
+  }
+}
+
+function doSetAlarm(replyToken, alarmStr) {
+  console.log('!alarm ' + alarmStr);
+
+  var prop = PropertiesService.getUserProperties();
+  var oldStr = prop.getProperty('alarm');
+  
+  if (alarmStr!=oldStr) {
+    prop.setProperty('alarm', alarmStr);
+    if (alarmStr) {
+      console.log('BROADCAST: ' + alarmStr)
+      broadcastText(alarmStr);
+      // replyText(replyToken, alarmStr)
+    }
+  }
+}
+// end of Sun Power Session
 
 function doClear(replyToken) {
   replyText(replyToken, '*** ALL DATA ARE CLEARED ***');
@@ -167,7 +325,7 @@ function popSets(key, value) {
   }
 }
 
-function doSet(replyToken, key, value) {
+function doSet(replyToken, key, value, broadcast) {
   console.log('set ' + key + ' ' + value);
   appendSets(key, value);
   
@@ -182,7 +340,9 @@ function doSet(replyToken, key, value) {
       PropertiesService.getUserProperties().setProperty(sets[i][0], sets[i][1]);
       console.log('doSet "' + sets[i][0] + '" "' + sets[i][1] + '"');
     }
-    broadcastText(msg);
+    if (broadcast) {
+      broadcastText(msg);
+    }
   }
 }
 
@@ -214,21 +374,23 @@ function getPosition(nameList) {
 }
 
 function replyText(replyToken, txt) {
-  var url = 'https://api.line.me/v2/bot/message/reply';
-  UrlFetchApp.fetch(url, {
+  if (replyToken) {  
+    var url = 'https://api.line.me/v2/bot/message/reply';
+    UrlFetchApp.fetch(url, {
       'headers': {
-      'Content-Type': 'application/json; charset=UTF-8',
-      'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN,
-    },
-    'method': 'post',
-    'payload': JSON.stringify({
-      'replyToken': replyToken,
-      'messages': [{
-        'type': 'text',
-        'text': txt,
-      }],
-    }),
-  });
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN,
+      },
+      'method': 'post',
+      'payload': JSON.stringify({
+        'replyToken': replyToken,
+        'messages': [{
+          'type': 'text',
+          'text': txt,
+        }],
+      }),
+    });
+  }
 }
 
 function broadcastText(txt) {
