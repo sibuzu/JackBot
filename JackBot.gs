@@ -110,13 +110,15 @@ function doShowAll2(replyToken) {
 }
 
 function doShowAll(replyToken) {
-  nameList = ['DAY', 'HDM', 'WEEK', 'WEEK1', 'VX', 'VX1', 'TVIX', 'J']
+  nameList = ['DAY', 'DAY2', 'DAY3', 'HDM', 'WEEK', 'WEEK1', 'VX', 'VX1', 'TVIX', 'J']
   replyText(replyToken, getPosition(nameList));
 }
 
 function doShowTX(replyToken) {
-  nameList = ['DAY', 'HDM', 'WEEK', 'WEEK1']
-  replyText(replyToken, getPosition(nameList));
+  nameList = ['DAY', 'DAY2', 'DAY3', 'HDM', 'WEEK', 'WEEK1']
+  s = getPosition(nameList)
+  s += "\nTOTAL: " + sumPosition(nameList)
+  replyText(replyToken, s);
 }
 
 function doShowVX(replyToken) {
@@ -158,10 +160,10 @@ function doSetGold(replyToken, goldStr) {
 }
 
 function needGoldSummerized() {
-  // 若是當天第一次 hour 為 10 時，傳回 true，否則就是 false
+  // 若是當天第一次 hour 為 11 時，傳回 true，否則就是 false
   var prop = PropertiesService.getUserProperties();
 
-  var checkHour = 10
+  var checkHour = 11
   var d = new Date();
   var hour = d.getHours();
   
@@ -371,6 +373,29 @@ function getPosition(nameList) {
   if (txt === '') txt = 'no position data'
   console.log("properties: " + txt);
   return txt
+}
+
+function sumPosition(nameList) {
+  var prop = PropertiesService.getUserProperties();
+  
+  total = 0;
+  keys = prop.getKeys().sort();
+  
+  for(var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    var val = prop.getProperty(key);
+    
+    if (typeof nameList !== 'undefined' && nameList.indexOf(key) < 0) continue;
+    if (val == 'undefined') continue;
+    total += parseInt(val)
+  }
+  
+  tstr = total.toString()
+  if (total > 0) {
+      tstr = "+" + tstr
+  }
+
+  return tstr
 }
 
 function replyText(replyToken, txt) {
