@@ -110,7 +110,7 @@ function doShowAll2(replyToken) {
 }
 
 function doShowAll(replyToken) {
-  nameList = ['DAY', 'DAY2', 'DAY3', 'HDM', 'WEEK', 'WEEK1', 'VX', 'VX1', 'TVIX', 'J']
+  nameList = ['DAY', 'DAY2', 'DAY3', 'HDM', 'WEEK', 'WEEK1', 'VX', 'VX1', 'TVIX', 'J', 'HSI']
   replyText(replyToken, getPosition(nameList));
 }
 
@@ -127,7 +127,7 @@ function doShowVX(replyToken) {
 }
 
 function doShowCN(replyToken) {
-  nameList = ['J']
+  nameList = ['J', 'HSI']
   replyText(replyToken, getPosition(nameList));
 }
 
