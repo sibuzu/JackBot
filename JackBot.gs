@@ -30,11 +30,14 @@ function doPost(e) {
     case 'tx':
       doShowTX(replyToken);
       break;
-    case 'vx':
-      doShowVX(replyToken);
+    case 'us':
+      doShowUS(replyToken);
       break;
     case 'cn':
       doShowCN(replyToken);
+      break;
+    case 'hdm':
+      doShowHDM(replyToken);
       break;
     case 'st':
       doShowTrend(replyToken);
@@ -89,9 +92,9 @@ function doPost(e) {
 function doHelp(replyToken) {
   replyText(replyToken, 'all  (台指期+VIX+中國部位)\n\
 tx (台指期部位)\n\
-vx (VIX部位)\n\
+us (美國部位)\n\
 cn (中國部位)\n\
-st (SuperTrend部位)\n\
+hdm (HDM部位)\n\
 st (SuperTrend部位)\n\
 gold (黃金價格)\n\
 power (今日發電)\n\
@@ -110,7 +113,7 @@ function doShowAll2(replyToken) {
 }
 
 function doShowAll(replyToken) {
-  nameList = ['DAY', 'DAY2', 'DAY3', 'HDM', 'WEEK', 'WEEK1', 'VX', 'VX1', 'TVIX', 'J', 'HSI']
+  nameList = ['DAY', 'DAY2', 'DAY3', 'HDM', 'WEEK', 'WEEK1', 'VX', 'VX1', 'TVIX', 'J', 'HSI-HDM', 'HHI-HDM', 'ES-HDM']
   replyText(replyToken, getPosition(nameList));
 }
 
@@ -121,13 +124,18 @@ function doShowTX(replyToken) {
   replyText(replyToken, s);
 }
 
-function doShowVX(replyToken) {
-  nameList = ['VX', 'VX1', 'TVIX']
+function doShowUS(replyToken) {
+  nameList = ['VX', 'VX1', 'TVIX', 'ES-HDM']
   replyText(replyToken, getPosition(nameList));
 }
 
 function doShowCN(replyToken) {
-  nameList = ['J', 'HSI']
+  nameList = ['J', 'HSI-HDM', 'HHI-HDM']
+  replyText(replyToken, getPosition(nameList));
+}
+
+function doShowHDM(replyToken) {
+  nameList = ['HDM', 'HSI-HDM', 'HHI-HDM', 'ES-HDM']
   replyText(replyToken, getPosition(nameList));
 }
 
