@@ -64,6 +64,15 @@ function doPost(e) {
       broadcastSticker(cmds[1])
       break
       
+    // tx info
+    case 'txinfo':
+      doShowTxInfo(replyToken);
+      break;
+      
+    case '!txinfo':
+      doSetTxInfo(replyToken, userMessage.substr(8));
+      break;
+     
     // gold
     case 'gold':
       doShowGold(replyToken);
@@ -96,6 +105,7 @@ us (美國部位)\n\
 cn (中國部位)\n\
 hdm (HDM部位)\n\
 st (SuperTrend部位)\n\
+txinfo (台指資訊)\n\
 gold (黃金價格)\n\
 power (今日發電)\n\
 alarm (今日太陽能警訊)\n\
@@ -142,6 +152,29 @@ function doShowHDM(replyToken) {
 function doShowTrend(replyToken) {
   nameList = ['MHI', 'MCH', 'CN', 'FGBL', 'FGBM', 'FGBS', 'TXF', 'NQ', 'ES', 'YM', 'GC', 'TU', 'FV', 'TY', 'NK', 'CL', 'rJ', 'rJM', 'rRB', 'rI']
   replyText(replyToken, getPosition(nameList));
+}
+
+// TX Info Session
+function doShowTxInfo(replyToken) {
+  var prop = PropertiesService.getUserProperties();
+  var txinfoStr = prop.getProperty('txinfo');
+  console.log('txinfo ' + txinfoStr);
+  if (txinfoStr) {
+    replyText(replyToken, txinfoStr);
+  }
+}
+
+function doSetTxInfo(replyToken, txinfoStr) {
+  console.log('!txinfo ' + txinfoStr);
+  
+  var prop = PropertiesService.getUserProperties();
+  prop.setProperty('txinfo', txinfoStr);
+  
+  if (needGoldSummerized()) {
+    console.log('BROADCAST: ' + txinfoStr)
+    broadcastText(txinfoStr)
+    // replyText(replyToken, txinfoStr)
+  }
 }
 
 // Gold Session
