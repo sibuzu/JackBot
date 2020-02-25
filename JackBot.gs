@@ -3,6 +3,13 @@ CHANNEL_ACCESS_TOKEN += 'UqxVaUKpT8iwxUVk1+BnsuH0pBVd83YKJy5+DsUtB1LgRv1qj6olhH1
 CHANNEL_ACCESS_TOKEN += 'AKi4Bqav/+fJPpumTD4kXDoqRTzIBo23Y1GYJ0ErrEI4r8ZahfrwXuQdB04t89/';
 CHANNEL_ACCESS_TOKEN += '1O/w1cDnyilFU='
 
+function doGet(e) { 
+  var param = e.parameter;
+  var name = param.name;
+  var age = param.age;
+  return ContentService.createTextOutput('name: ' + name + ', age: ' + age);
+}
+
 function doPost(e) {  
   var msg = JSON.parse(e.postData.contents);
   console.log("contents: " + e.postData.contents);
@@ -58,7 +65,7 @@ function doPost(e) {
       doRemove(replyToken, cmds[1])
       break
     case '!say':
-      broadcastText(cmds[1])
+      broadcastText(replyToken, userMessage.substr(5));
       break
     case '!sticker':
       broadcastSticker(cmds[1])
@@ -123,29 +130,29 @@ function doShowAll2(replyToken) {
 }
 
 function doShowAll(replyToken) {
-  nameList = ['DAY', 'DAY2', 'DAY3', 'HDM', 'WEEK', 'WEEK1', 'VX', 'VX1', 'TVIX', 'J', 'HSI-HDM', 'HHI-HDM', 'ES-HDM']
+  nameList = ['DAY', 'DAY2', 'DAY3', 'HDM', 'HDS', 'WEEK', 'WEEK1', 'VX', 'VX_結算空', 'TVIX', 'J', 'IF300-1', 'IF300-2']
   replyText(replyToken, getPosition(nameList));
 }
 
 function doShowTX(replyToken) {
-  nameList = ['DAY', 'DAY2', 'DAY3', 'HDM', 'WEEK', 'WEEK1']
+  nameList = ['DAY', 'DAY2', 'DAY3', 'HDM', 'HDS', 'WEEK', 'WEEK1']
   s = getPosition(nameList)
   s += "\nTOTAL: " + sumPosition(nameList)
   replyText(replyToken, s);
 }
 
 function doShowUS(replyToken) {
-  nameList = ['VX', 'VX1', 'TVIX', 'ES-HDM']
+  nameList = ['VX', 'VX_結算空', 'TVIX']
   replyText(replyToken, getPosition(nameList));
 }
 
 function doShowCN(replyToken) {
-  nameList = ['J', 'HSI-HDM', 'HHI-HDM']
+  nameList = ['J', 'IF300-1', 'IF300-2']
   replyText(replyToken, getPosition(nameList));
 }
 
 function doShowHDM(replyToken) {
-  nameList = ['HDM', 'HSI-HDM', 'HHI-HDM', 'ES-HDM']
+  nameList = ['HDM', 'HDS']
   replyText(replyToken, getPosition(nameList));
 }
 
@@ -170,11 +177,9 @@ function doSetTxInfo(replyToken, txinfoStr) {
   var prop = PropertiesService.getUserProperties();
   prop.setProperty('txinfo', txinfoStr);
   
-  if (needGoldSummerized()) {
-    console.log('BROADCAST: ' + txinfoStr)
-    broadcastText(txinfoStr)
-    // replyText(replyToken, txinfoStr)
-  }
+  console.log('BROADCAST: ' + txinfoStr)
+  broadcastText(txinfoStr)
+  // replyText(replyToken, txinfoStr)
 }
 
 // Gold Session
@@ -372,7 +377,14 @@ function doSet(replyToken, key, value, broadcast) {
   console.log('set ' + key + ' ' + value);
   appendSets(key, value);
   
-  Utilities.sleep(3 * 1000);
+  if (key.substring(0, 2) == "IF")
+  {
+    Utilities.sleep(25 * 1000);
+  }
+  else
+  {
+    Utilities.sleep(3 * 1000);
+  }
   
   var sets = popSets();
   if (sets) {
