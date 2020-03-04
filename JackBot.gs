@@ -3,6 +3,8 @@ CHANNEL_ACCESS_TOKEN += 'UqxVaUKpT8iwxUVk1+BnsuH0pBVd83YKJy5+DsUtB1LgRv1qj6olhH1
 CHANNEL_ACCESS_TOKEN += 'AKi4Bqav/+fJPpumTD4kXDoqRTzIBo23Y1GYJ0ErrEI4r8ZahfrwXuQdB04t89/';
 CHANNEL_ACCESS_TOKEN += '1O/w1cDnyilFU='
 
+var TELEGRAM_TOKEN = '1075006572:AAEoBDvTxZTfunWweYAwCx0s2JUZ2rnZyyE'
+
 function doGet(e) { 
   var param = e.parameter;
   var name = param.name;
@@ -65,7 +67,8 @@ function doPost(e) {
       doRemove(replyToken, cmds[1])
       break
     case '!say':
-      broadcastText(replyToken, userMessage.substr(5));
+      broadcastText(userMessage.substr(5))
+      // replyText(replyToken, userMessage.substr(5))
       break
     case '!sticker':
       broadcastSticker(cmds[1])
@@ -130,12 +133,12 @@ function doShowAll2(replyToken) {
 }
 
 function doShowAll(replyToken) {
-  nameList = ['DAY', 'DAY2', 'DAY3', 'HDM', 'HDS', 'WEEK', 'WEEK1', 'VX', 'VX_結算空', 'TVIX', 'J', 'IF300-1', 'IF300-2']
+  nameList = ['DAY', 'DAY2', 'DAY3', 'DAY4', 'HDM', 'HDS', 'WEEK', 'WEEK1', 'VX', 'VX_結算空', 'TVIX', 'J', 'IF300-1', 'IF300-2']
   replyText(replyToken, getPosition(nameList));
 }
 
 function doShowTX(replyToken) {
-  nameList = ['DAY', 'DAY2', 'DAY3', 'HDM', 'HDS', 'WEEK', 'WEEK1']
+  nameList = ['DAY', 'DAY2', 'DAY3', 'DAY4', 'HDM', 'HDS', 'WEEK', 'WEEK1']
   s = getPosition(nameList)
   s += "\nTOTAL: " + sumPosition(nameList)
   replyText(replyToken, s);
@@ -379,7 +382,7 @@ function doSet(replyToken, key, value, broadcast) {
   
   if (key.substring(0, 2) == "IF")
   {
-    Utilities.sleep(25 * 1000);
+    Utilities.sleep(3 * 1000);
   }
   else
   {
@@ -487,6 +490,13 @@ function broadcastText(txt) {
       }],
     }),
   });
+  
+  // telegram
+  var url2 = 'https://api.telegram.org/bot' + TELEGRAM_TOKEN + 
+    '/sendMessage?chat_id=@solarsuna&text=' + encodeURIComponent(txt)
+  
+  console.log("TG: " + url2)
+  UrlFetchApp.fetch(url2)
 }
 
 function broadcastSticker(stickerId) {
