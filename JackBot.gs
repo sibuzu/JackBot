@@ -6,19 +6,34 @@ CHANNEL_ACCESS_TOKEN += '1O/w1cDnyilFU='
 var TELEGRAM_TOKEN = '1075006572:AAEoBDvTxZTfunWweYAwCx0s2JUZ2rnZyyE'
 
 function doGet(e) { 
-  var param = e.parameter;
-  var name = param.name;
-  var age = param.age;
-  return ContentService.createTextOutput('name: ' + name + ', age: ' + age);
+  console.log("parameter: " + e.parameter.name);
+  
+  return ContentService.createTextOutput('GET: Telebot, ' + e.parameter.name);
 }
 
 function doPost(e) {  
   var msg = JSON.parse(e.postData.contents);
-  console.log("contents: " + e.postData.contents);
+  console.log("contents: " + e.postData.contents)
 
-  var replyToken = msg.events[0].replyToken;
-  var userMessage = msg.events[0].message.text;
+  if (typeof msg.events != 'undefined') {
+    var replyToken = msg.events[0].replyToken;
+    var userMessage = msg.events[0].message.text;
+    doMyPost(replyToken, userMessage)
+  }
+  else if (typeof msg.update_id != 'undefined') {
+    replyToken = msg.message.from.id
+    userMessage = msg.message.text
+    doMyPost(replyToken, userMessage)
+  }
+}
 
+function isLine(replyToken) {
+  return (typeof replyToken == "string")
+}
+
+function doMyPost(replyToken, userMessage) {
+  console.log("replyToken: " + replyToken + ", userMessage: " + userMessage)
+  
   if (typeof replyToken === 'undefined' || userMessage == null) {
     return;
   }
@@ -27,8 +42,14 @@ function doPost(e) {
 
   switch (cmds[0].toLowerCase()) {
     case 'help':
-    case 'status':
-      doHelp(replyToken);
+      if (isLine(replyToken)) {
+        doLineHelp(replyToken)
+      }
+      break
+    case '/help':
+      if (!isLine(replyToken)) {
+        doTeleHelp(replyToken)
+      }
       break;
     case 'all':
       doShowAll(replyToken);
@@ -52,21 +73,27 @@ function doPost(e) {
       doShowTrend(replyToken);
       break;
     case '!help':
-      doHelp2(replyToken)
+      if (isLine(replyToken)) {
+        doHelp2(replyToken)
+      }
       break
     case '!clear':
+    case '/clear':
       if (cmds[1] == 'all') doClear(replyToken)
       break
     case '!set':
+    case '/set':
       doSet(replyToken, cmds[1], cmds[2], true)
       break
     case '!!set':
       doSet(replyToken, cmds[1], cmds[2], false)
       break
     case '!remove':
+    case '/remove':
       doRemove(replyToken, cmds[1])
       break
     case '!say':
+    case '/say':
       broadcastText(userMessage.substr(5))
       // replyText(replyToken, userMessage.substr(5))
       break
@@ -108,7 +135,27 @@ function doPost(e) {
   }
 }
 
-function doHelp(replyToken) {
+function doTeleHelp(replyToken) {
+  replyText(replyToken, 'all  (台指期+VIX+中國部位)\n\
+tx (台指期部位)\n\
+us (美國部位)\n\
+cn (中國部位)\n\
+hdm (HDM部位)\n\
+st (SuperTrend部位)\n\
+txinfo (台指資訊)\n\
+gold (黃金價格)\n\
+power (今日發電)\n\
+alarm (今日太陽能警訊)\n\
+/help (說明)\n\
+/activate (啟動報價通知)\n\
+/deactivate (取消報價通知)\n\
+/set <product> <pos> (設定部位)\n\
+/remove <product> (清除部位)\n\
+/say (說明)')
+}
+
+
+function doLineHelp(replyToken) {
   replyText(replyToken, 'all  (台指期+VIX+中國部位)\n\
 tx (台指期部位)\n\
 us (美國部位)\n\
@@ -455,6 +502,23 @@ function sumPosition(nameList) {
 }
 
 function replyText(replyToken, txt) {
+  if (isLine(replyToken)) {
+    replyLineText(replyToken, txt)
+  }
+  else {
+    replyTeleText(replyToken, txt)
+  }
+}
+
+function replyTeleText(replyToken, txt) {
+  var url = 'https://api.telegram.org/bot' + TELEGRAM_TOKEN + 
+    '/sendMessage?chat_id=' + replyToken + '&text=' + encodeURIComponent(txt)
+  
+  console.log("TG: " + url)
+  UrlFetchApp.fetch(url)
+}
+
+function replyLineText(replyToken, txt) {
   if (replyToken) {  
     var url = 'https://api.line.me/v2/bot/message/reply';
     UrlFetchApp.fetch(url, {
@@ -474,7 +538,7 @@ function replyText(replyToken, txt) {
   }
 }
 
-function broadcastText(txt) {
+function broadcastText(txt) { 
   console.log('broadcast ' + txt);
   var url = 'https://api.line.me/v2/bot/message/broadcast';
   UrlFetchApp.fetch(url, {
