@@ -7,22 +7,29 @@ var TELEGRAM_TOKEN = '862133853:AAF0GXHvRM'
 TELEGRAM_TOKEN += 'rbqgbOq60rP4tiEamHqIZmSQY'
 
 var ROOT_ID = '942825842'
-var DEBUG_MODE = false
+var DEBUG_MODE = true
 
 function test() {
-  // broadcastText("Test Mode")
-  // broadcastTeleSticker(null, "hello")
-  // replyTelePhoto({"id": ROOT_ID}, "https://pgw.udn.com.tw/gw/photo.php?u=https://uc.udn.com.tw/photo/2019/11/27/99/7117740.jpg&x=0&y=0&sw=0&sh=0&sl=W&fw=1050")
+  cmds = ['txchart', 'all']
+  doChart({'id': ROOT_ID}, cmds)
 }
 
 //region Get/Post Commands
 function doGet(e) { 
+  console.log('get2 ', e)
   sticker = e.parameter.sticker
   if (sticker) {
     console.log("sticker: " + sticker);
     broadcastTeleSticker(null, sticker)   
     return ContentService.createTextOutput("send sticker " + sticker)
   }
+  chart = e.parameter.chart
+  if (chart == 'vx' || chart == 'tx') {
+    cmds = [ chart + 'chart', 'all' ]
+    doChart({'id': ROOT_ID}, cmds)
+    return ContentService.createTextOutput("send " + chart + " all")
+  }
+  return ContentService.createTextOutput('nothing');
 }
 
 function doPost(e) {  
@@ -111,6 +118,10 @@ function doMyPost(replyToken, userMessage) {
     case 'st':
       doShowTrend(replyToken);
       break;
+    case 'vxchart':
+    case 'txchart':
+      doChart(replyToken, cmds);
+      break;
     case '!help':
       if (isLine(replyToken)) {
         doHelp2(replyToken)
@@ -122,10 +133,15 @@ function doMyPost(replyToken, userMessage) {
       break
     case '!set':
     case '/set':
-      doSet(replyToken, cmds[1], cmds[2], true)
+      doSetValue(replyToken, cmds[1], cmds[2], true)
       break
     case '!!set':
-      doSet(replyToken, cmds[1], cmds[2], false)
+    case '//set':
+      doSetValue(replyToken, cmds[1], cmds[2], false)
+      break
+    case '!get':
+    case '/get':
+      doGetValue(replyToken, cmds[1])
       break
     case '!remove':
     case '/remove':
@@ -198,6 +214,7 @@ alarm (今日太陽能警訊)\n\
 /activate (啟動報價通知)\n\
 /deactivate (取消報價通知)\n\
 /set <product> <pos> (設定部位)\n\
+/get <product> (讀取部位)\n\
 /remove <product> (清除部位)\n\
 /say (說明)')
 }
@@ -490,7 +507,7 @@ function popSets(key, value) {
   }
 }
 
-function doSet(replyToken, key, value, broadcast) {
+function doSetValue(replyToken, key, value, broadcast) {
   console.log('set ' + key + ' ' + value);
   appendSets(key, value);
   
@@ -503,12 +520,19 @@ function doSet(replyToken, key, value, broadcast) {
       if (msg!='') msg += '\n';
       msg += sets[i][0] + ': ' + sets[i][1];
       PropertiesService.getUserProperties().setProperty(sets[i][0], sets[i][1]);
-      console.log('doSet "' + sets[i][0] + '" "' + sets[i][1] + '"');
+      console.log('doSetValue "' + sets[i][0] + '" "' + sets[i][1] + '"');
     }
     if (broadcast) {
       broadcastText(msg);
     }
   }
+}
+
+function doGetValue(replyToken, key) {
+  console.log('get ' + key);
+  var prop = PropertiesService.getUserProperties();
+  var val = prop.getProperty(key)
+  replyText(replyToken, val)
 }
 
 function doRemove(replyToken, key) {
@@ -745,6 +769,50 @@ function broadcastTelePhoto(replyToken, sticker) {
   }
 }
 //endregion SendPhoto
+
+//region chart
+function doChart(replyToken, cmds) {
+  console.log('TG chart: ' + cmds[0])
+  var prop = PropertiesService.getUserProperties()
+  var chatid
+  var data
+  
+  if (cmds.length > 1 && cmds[1] == 'all') {
+    console.log(cmds[0] + ' ' + cmds[1])
+    if (DEBUG_MODE || true) {
+      chatid = ROOT_ID
+    }  
+    else {
+      var strUserList = prop.getProperty('userList')
+      if (strUserList) {
+        var userList = JSON.parse(strUserList)
+        chatid = userList.map(function(x){return x.id}).join(',')
+      }
+    }
+  }
+  else {
+    chatid = replyToken.id
+  }
+  
+  console.log('chatid', chatid)
+  if (!chatid) return
+  
+  switch (cmds[0]) {
+    case 'vxchart':
+      data = prop.getProperty('vxdata')
+      break
+    case 'txchart':
+      data = prop.getProperty('txdata')
+      break
+  }
+  console.log('data', data)
+  if (!data) return
+  
+  url = 'http://solarsuna.com:8008/vxchart?chatid=' + chatid + '&data=' + data
+  console.log('chart url', url)
+  UrlFetchApp.fetch(url)
+}
+//endregion chart
 
 //region Users
 function getUser(userList, user) {
