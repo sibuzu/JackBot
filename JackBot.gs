@@ -3,12 +3,26 @@ CHANNEL_ACCESS_TOKEN += 'UqxVaUKpT8iwxUVk1+BnsuH0pBVd83YKJy5+DsUtB1LgRv1qj6olhH1
 CHANNEL_ACCESS_TOKEN += 'AKi4Bqav/+fJPpumTD4kXDoqRTzIBo23Y1GYJ0ErrEI4r8ZahfrwXuQdB04t89/';
 CHANNEL_ACCESS_TOKEN += '1O/w1cDnyilFU='
 
-var TELEGRAM_TOKEN = '1075006572:AAEoBDvTxZTfunWweYAwCx0s2JUZ2rnZyyE'
+var TELEGRAM_TOKEN = '862133853:AAF0GXHvRM'
+TELEGRAM_TOKEN += 'rbqgbOq60rP4tiEamHqIZmSQY'
 
+var ROOT_ID = '942825842'
+var DEBUG_MODE = false
+
+function test() {
+  // broadcastText("Test Mode")
+  // broadcastTeleSticker(null, "hello")
+  // replyTelePhoto({"id": ROOT_ID}, "https://pgw.udn.com.tw/gw/photo.php?u=https://uc.udn.com.tw/photo/2019/11/27/99/7117740.jpg&x=0&y=0&sw=0&sh=0&sl=W&fw=1050")
+}
+
+//region Get/Post Commands
 function doGet(e) { 
-  console.log("parameter: " + e.parameter.name);
-  
-  return ContentService.createTextOutput('GET: Telebot, ' + e.parameter.name);
+  sticker = e.parameter.sticker
+  if (sticker) {
+    console.log("sticker: " + sticker);
+    broadcastTeleSticker(null, sticker)   
+    return ContentService.createTextOutput("send sticker " + sticker)
+  }
 }
 
 function doPost(e) {  
@@ -21,7 +35,7 @@ function doPost(e) {
     doMyPost(replyToken, userMessage)
   }
   else if (typeof msg.update_id != 'undefined') {
-    replyToken = msg.message.from.id
+    replyToken = msg.message.from
     userMessage = msg.message.text
     doMyPost(replyToken, userMessage)
   }
@@ -32,7 +46,13 @@ function isLine(replyToken) {
 }
 
 function doMyPost(replyToken, userMessage) {
-  console.log("replyToken: " + replyToken + ", userMessage: " + userMessage)
+  
+  if (isLine(replyToken)) {
+    console.log("replyToken: " + replyToken + ", userMessage: " + userMessage)
+  }
+  else {
+    console.log("replyToken: (" + replyToken.id + "," + replyToken.first_name + "), userMessage: " + userMessage)    
+  }
   
   if (typeof replyToken === 'undefined' || userMessage == null) {
     return;
@@ -42,15 +62,33 @@ function doMyPost(replyToken, userMessage) {
 
   switch (cmds[0].toLowerCase()) {
     case 'help':
+    case '/help':
       if (isLine(replyToken)) {
         doLineHelp(replyToken)
       }
-      break
-    case '/help':
-      if (!isLine(replyToken)) {
+      else {
         doTeleHelp(replyToken)
       }
       break;
+      
+    case '/activate':
+      if (!isLine(replyToken)) {
+        doAddUser(replyToken)
+      }
+      break;
+      
+    case '/deactivate':
+      if (!isLine(replyToken)) {
+        doRemoveUser(replyToken)
+      }
+      break;
+    
+    case '/userlist':
+      if (!isLine(replyToken)) {
+        doShowUserList(replyToken)
+      }
+      break;
+      
     case 'all':
       doShowAll(replyToken);
       break;
@@ -61,6 +99,7 @@ function doMyPost(replyToken, userMessage) {
       doShowTX(replyToken);
       break;
     case 'us':
+    case 'vx':
       doShowUS(replyToken);
       break;
     case 'cn':
@@ -97,8 +136,10 @@ function doMyPost(replyToken, userMessage) {
       broadcastText(userMessage.substr(5))
       // replyText(replyToken, userMessage.substr(5))
       break
-    case '!sticker':
-      broadcastSticker(cmds[1])
+    case '/sticker':
+      if (!isLine(replyToken)) {
+        broadcastTeleSticker(replyToken, cmds[1])
+      }
       break
       
     // tx info
@@ -108,6 +149,12 @@ function doMyPost(replyToken, userMessage) {
       
     case '!txinfo':
       doSetTxInfo(replyToken, userMessage.substr(8));
+      break;
+     
+    // spread quote 
+    case '!spread':
+    case '/spread':
+      doSpreadQuote(replyToken, userMessage.substr(8));
       break;
      
     // gold
@@ -139,6 +186,7 @@ function doTeleHelp(replyToken) {
   replyText(replyToken, 'all  (台指期+VIX+中國部位)\n\
 tx (台指期部位)\n\
 us (美國部位)\n\
+vx (VX部位)\n\
 cn (中國部位)\n\
 hdm (HDM部位)\n\
 st (SuperTrend部位)\n\
@@ -159,6 +207,7 @@ function doLineHelp(replyToken) {
   replyText(replyToken, 'all  (台指期+VIX+中國部位)\n\
 tx (台指期部位)\n\
 us (美國部位)\n\
+vx (VX部位)\n\
 cn (中國部位)\n\
 hdm (HDM部位)\n\
 st (SuperTrend部位)\n\
@@ -174,44 +223,54 @@ function doHelp2(replyToken) {
 !remove <product> (清除部位)\n\
 !say <message> (廣播)');
 }
+//endregion Get/Post Commands
 
+//region Show Commodities
 function doShowAll2(replyToken) {
   replyText(replyToken, getPosition());
 }
 
+var TX_LIST = ['DAY', 'DAY-Trading1', 'DAY-Trading2', 'DAY-Trading3', 'DAY-Trading4', 'DAY-Trading5', 'DAY2', 'HDM', 'HDM-1', 'HDD', 'HDS', 'WEEK']
+var US_LIST = ['VX1', 'VX2', 'VX_結算空', 'VXday']
+var CN_LIST = ['J', 'IF300-1', 'IF300-2']
+var HDM_LIST = ['HDM', 'HDM-1', 'HDD', 'HDS']
+var TREND_LIST = ['MHI', 'MCH', 'CN', 'FGBL', 'FGBM', 'FGBS', 'TXF', 'NQ', 'ES', 'YM', 'GC', 'TU', 'FV', 'TY', 'NK', 'CL', 'rJ', 'rJM', 'rRB', 'rI']
+
 function doShowAll(replyToken) {
-  nameList = ['DAY', 'DAY2', 'DAY3', 'DAY4', 'HDM', 'HDS', 'WEEK', 'WEEK1', 'VX', 'VX_結算空', 'TVIX', 'J', 'IF300-1', 'IF300-2']
-  replyText(replyToken, getPosition(nameList));
+  var ALL_LIST = [...TX_LIST, ...US_LIST, ...CN_LIST, ...HDM_LIST]
+  ALL_LIST = [...new Set(ALL_LIST)]
+  replyText(replyToken, getPosition(ALL_LIST));
 }
 
 function doShowTX(replyToken) {
-  nameList = ['DAY', 'DAY2', 'DAY3', 'DAY4', 'HDM', 'HDS', 'WEEK', 'WEEK1']
-  s = getPosition(nameList)
-  s += "\nTOTAL: " + sumPosition(nameList)
+  s = getPosition(TX_LIST)
+  s += "\nTOTAL: " + sumPosition(TX_LIST)
   replyText(replyToken, s);
 }
 
 function doShowUS(replyToken) {
-  nameList = ['VX', 'VX_結算空', 'TVIX']
-  replyText(replyToken, getPosition(nameList));
+  s = getPosition(US_LIST)
+  s += "\nTOTAL: " + sumPosition(US_LIST)
+  replyText(replyToken, s);
 }
 
 function doShowCN(replyToken) {
-  nameList = ['J', 'IF300-1', 'IF300-2']
-  replyText(replyToken, getPosition(nameList));
+  nameList = []
+  replyText(replyToken, getPosition(CN_LIST));
 }
 
 function doShowHDM(replyToken) {
-  nameList = ['HDM', 'HDS']
-  replyText(replyToken, getPosition(nameList));
+  nameList = []
+  replyText(replyToken, getPosition(HDM_LIST));
 }
 
 function doShowTrend(replyToken) {
-  nameList = ['MHI', 'MCH', 'CN', 'FGBL', 'FGBM', 'FGBS', 'TXF', 'NQ', 'ES', 'YM', 'GC', 'TU', 'FV', 'TY', 'NK', 'CL', 'rJ', 'rJM', 'rRB', 'rI']
-  replyText(replyToken, getPosition(nameList));
+  nameList = []
+  replyText(replyToken, getPosition(TREND_LIST));
 }
+//endregion Show Commodities
 
-// TX Info Session
+//region TX Info Session
 function doShowTxInfo(replyToken) {
   var prop = PropertiesService.getUserProperties();
   var txinfoStr = prop.getProperty('txinfo');
@@ -232,7 +291,15 @@ function doSetTxInfo(replyToken, txinfoStr) {
   // replyText(replyToken, txinfoStr)
 }
 
-// Gold Session
+// Spread Quote
+function doSpreadQuote(replyToken, str) {
+  console.log('BROADCAST: ' + str)
+  broadcastText(str)
+  // replyText(replyToken, str)
+}
+//endregion TX Info Session
+
+//region Gold Session
 function doShowGold(replyToken) {
   var prop = PropertiesService.getUserProperties();
   var goldStr = prop.getProperty('gold');
@@ -281,10 +348,9 @@ function needGoldSummerized() {
   
   return false;
 }
-// End Gold Session
+//endregion Gold Session
 
-
-// Sun Power Session
+//region Sun Power Session
 function doShowPower(replyToken) {
   var prop = PropertiesService.getUserProperties();
   var powerStr = prop.getProperty('power');
@@ -361,8 +427,9 @@ function doSetAlarm(replyToken, alarmStr) {
     }
   }
 }
-// end of Sun Power Session
+//endregion Sun Power Session
 
+//region Properties
 function doClear(replyToken) {
   replyText(replyToken, '*** ALL DATA ARE CLEARED ***');
   PropertiesService.getUserProperties().deleteAllProperties();
@@ -427,14 +494,7 @@ function doSet(replyToken, key, value, broadcast) {
   console.log('set ' + key + ' ' + value);
   appendSets(key, value);
   
-  if (key.substring(0, 2) == "IF")
-  {
-    Utilities.sleep(3 * 1000);
-  }
-  else
-  {
-    Utilities.sleep(3 * 1000);
-  }
+  Utilities.sleep(3 * 1000);
   
   var sets = popSets();
   if (sets) {
@@ -469,6 +529,8 @@ function getPosition(nameList) {
     
     if (typeof nameList !== 'undefined' && nameList.indexOf(key) < 0) continue;
     if (val == 'undefined') continue;
+    if (key == 'userList') continue;
+    // console.log("p: " + key + " - " + typeof val + " --- " + val)
     if (txt !== '') txt += '\n';
     txt += key + ': ' + val;
   }
@@ -500,8 +562,12 @@ function sumPosition(nameList) {
 
   return tstr
 }
+//endregion Properties
 
+//region ReplyText
 function replyText(replyToken, txt) {
+  if (!txt) return;
+
   if (isLine(replyToken)) {
     replyLineText(replyToken, txt)
   }
@@ -512,9 +578,17 @@ function replyText(replyToken, txt) {
 
 function replyTeleText(replyToken, txt) {
   var url = 'https://api.telegram.org/bot' + TELEGRAM_TOKEN + 
-    '/sendMessage?chat_id=' + replyToken + '&text=' + encodeURIComponent(txt)
+    '/sendMessage?chat_id=' + replyToken.id + '&text=' + encodeURIComponent(txt)
   
-  console.log("TG: " + url)
+  console.log("TG reply: " + url)
+  UrlFetchApp.fetch(url)
+}
+
+function infoTeleRoot(txt) {
+  var url = 'https://api.telegram.org/bot' + TELEGRAM_TOKEN + 
+    '/sendMessage?chat_id=' + ROOT_ID + '&text=' + encodeURIComponent(txt)
+  
+  console.log("ROOT INFO: " + url)
   UrlFetchApp.fetch(url)
 }
 
@@ -537,9 +611,41 @@ function replyLineText(replyToken, txt) {
     });
   }
 }
+//endregion ReplyText
 
+//region Broadcast
 function broadcastText(txt) { 
-  console.log('broadcast ' + txt);
+  console.log('broadcast ' + txt)
+  if (!txt) return;
+  
+  // broadcastLineText(txt)
+  broadcastTeleText(txt)
+}
+
+function broadcastTeleText(txt) {
+  var txt2 = encodeURIComponent(txt)
+
+  var prop = PropertiesService.getUserProperties()
+  var strUserList = prop.getProperty('userList')
+  if (strUserList) {
+    var userList = JSON.parse(strUserList)
+    
+    console.log("TG Broadcast to " + userList.length + " users: " + txt2)
+    for (let i = 0 ; i < userList.length; i++) {
+      let user = userList[i]
+
+      if (DEBUG_MODE && user.id != ROOT_ID) continue;
+      
+      // telegram
+      var url = 'https://api.telegram.org/bot' + TELEGRAM_TOKEN + 
+        '/sendMessage?chat_id=' + user.id + '&text=' + txt2
+  
+      UrlFetchApp.fetch(url)
+    }
+  }
+}
+
+function broadcastLineText(txt) {
   var url = 'https://api.line.me/v2/bot/message/broadcast';
   UrlFetchApp.fetch(url, {
       'headers': {
@@ -554,35 +660,153 @@ function broadcastText(txt) {
       }],
     }),
   });
-  
-  // telegram
-  var url2 = 'https://api.telegram.org/bot' + TELEGRAM_TOKEN + 
-    '/sendMessage?chat_id=@solarsuna&text=' + encodeURIComponent(txt)
-  
-  console.log("TG: " + url2)
-  UrlFetchApp.fetch(url2)
+}
+//endregion Broadcast
+
+//region Stickers
+function getStickerId(sticker) {
+  switch (sticker) {
+    case 'hello':
+      return "CAACAgUAAxkBAAIBQl5gbzCK3oZsYnvGuFKYoAmJLMSZAAICAQACnVS6Dfkn2q5BEiUUGAQ"
+    case 'bye':
+      return "CAACAgUAAxkBAAIBR15gcSSQEpL0AfChB3rMIR3iUQOtAAKwAAOdVLoNpogVolFIaW4YBA"
+    case 'sleep':
+      return "CAACAgUAAxkBAAIDQV5qPNcMEtPgV-2PpT2lidAZ7eq0AALCAAOdVLoNVFZ7FATJeCAYBA"
+  }
+  return null
 }
 
-function broadcastSticker(stickerId) {
-  var url = 'https://api.line.me/v2/bot/message/broadcast';
-  UrlFetchApp.fetch(url, {
-      'headers': {
-      'Content-Type': 'application/json; charset=UTF-8',
-      'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN,
-    },
-    'method': 'post',
-    'payload': JSON.stringify({
-      'messages': [{
-        'type': 'sticker',
-        'packageId': "1",
-        'stickerId': stickerId,
-      }],
-    }),
-  });
+function replyTeleSticker(replyToken, sticker) {
+  stickerId = getStickerId(sticker)
+  if (stickerId) {
+    var payload = {
+      "method": "sendSticker",
+      "chat_id": replyToken.id,
+      "sticker": stickerId    
+    }
+    var data = {
+      "method": "post",
+      "payload": payload
+    }    
+    var url = "https://api.telegram.org/bot" + TELEGRAM_TOKEN + "/?chat_id=" + replyToken.id
+    UrlFetchApp.fetch(url, data)
+  }
 }
 
-function test() {
-  x = "a,d,f,z,e,s"
-  y = x.split(',').sort()
-  console.log(y)
+function broadcastTeleSticker(replyToken, sticker) {
+  console.log('TG sticker: ' + sticker)
+
+  var prop = PropertiesService.getUserProperties()
+  var strUserList = prop.getProperty('userList')
+  if (strUserList) {
+    var userList = JSON.parse(strUserList)
+    
+    for (let i = 0 ; i < userList.length; i++) {
+      let user = userList[i]
+      if (DEBUG_MODE && user.id != ROOT_ID) continue;
+
+      replyTeleSticker(user, sticker)
+    }
+  }
 }
+//endregion Stickers
+
+//region SendPhoto
+function replyTelePhoto(replyToken, photo) {
+  if (photo) {
+    var payload = {
+      "method": "sendPhoto",
+      "chat_id": replyToken.id,
+      "photo": photo    
+    }
+    var data = {
+      "method": "post",
+      "payload": payload
+    }    
+    var url = "https://api.telegram.org/bot" + TELEGRAM_TOKEN + "/?chat_id=" + replyToken.id
+    var response = UrlFetchApp.fetch(url, data)
+  }
+}
+
+function broadcastTelePhoto(replyToken, sticker) {
+  console.log('TG sticker: ' + sticker)
+
+  var prop = PropertiesService.getUserProperties()
+  var strUserList = prop.getProperty('userList')
+  if (strUserList) {
+    var userList = JSON.parse(strUserList)
+    
+    for (let i = 0 ; i < userList.length; i++) {
+      let user = userList[i]
+      if (DEBUG_MODE && user.id != ROOT_ID) continue;
+
+      replyTelePhoto(user, sticker)
+    }
+  }
+}
+//endregion SendPhoto
+
+//region Users
+function getUser(userList, user) {
+  var indexOfUser = userList.findIndex(x => x.id === user.id)
+  return indexOfUser
+}
+
+function doAddUser(replyToken) {
+  msg = "add user: (" + replyToken.id + "," + replyToken.first_name + ")"
+  console.log(msg)
+  infoTeleRoot(msg)
+
+  var prop = PropertiesService.getUserProperties();
+  var strUserList = prop.getProperty('userList')
+  var userList = []
+  
+  if (strUserList) {
+    userList = JSON.parse(strUserList)
+  }
+
+  if (getUser(userList, replyToken)<0) { 
+    userList.push(replyToken)
+    prop.setProperty('userList', JSON.stringify(userList))
+    replyText(replyToken, "user " + replyToken.first_name + " activated")
+  }
+}
+
+function doRemoveUser(replyToken) {
+  console.log("remove user: (" + replyToken.id + "," + replyToken.first_name + ")")
+
+  var prop = PropertiesService.getUserProperties();
+  var strUserList = prop.getProperty('userList')
+  
+  if (strUserList) {
+    userList = JSON.parse(strUserList)
+    var index = getUser(userList, replyToken)
+    if (index>=0) {
+      userList.pop
+      userList.splice(index, 1)
+      prop.setProperty('userList', JSON.stringify(userList))
+      replyText(replyToken, "user " + replyToken.first_name + " deactivated")
+    }
+  }
+}
+
+function doShowUserList(replyToken) {
+  
+  var prop = PropertiesService.getUserProperties();
+  var strUserList = prop.getProperty('userList')
+  
+  console.log("userList: " + strUserList)
+  if (strUserList) {
+    userList = JSON.parse(strUserList)
+    
+    msg = ""
+    for(let i = 0 ; i < userList.length; i++) {
+      let user = userList[i]
+      if (msg) msg += '\n'
+      msg += user.id + ", " + user.first_name
+    }
+    console.log("user list: " + msg)
+    replyText(replyToken, msg)
+  }
+}
+//endregion Users
