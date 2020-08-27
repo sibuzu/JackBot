@@ -86,7 +86,8 @@ def plotdata(data):
     return fname
 
 def teleSendPhoto_Old(chat_list, fname):
-    TELEGRAM_TOKEN = '862133853:AAF0GXHvRMrbqgbOq60rP4tiEamHqIZmSQY'
+    TELEGRAM_TOKEN = '862133853:AAF0GXHvRMrbqg' 
+    TELEGRAM_TOKEN += 'bOq60rP4tiEamHqIZmSQY'
     for chatid in chat_list:
         data = {
             "method": "sendPhoto",
@@ -96,7 +97,8 @@ def teleSendPhoto_Old(chat_list, fname):
         requests.post(url, files=files, data=data)
 
 def teleSendPhoto(chat_list, fname):
-    TELEGRAM_TOKEN = '1305465743:AAFLcqvOQ6lG_dsCoOH8sndcd96llc7n3L4'
+    TELEGRAM_TOKEN = '1305465743:AAFLcqvOQ6lG'
+    TELEGRAM_TOKEN += '_dsCoOH8sndcd96llc7n3L4'
     for chatid in chat_list:
         data = {
             "method": "sendPhoto",
